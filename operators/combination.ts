@@ -1,8 +1,8 @@
+import {EventEmitter} from 'events';
 import {Observable, concat, empty, interval, combineLatest, forkJoin, merge, of, race, throwError, timer, zip, fromEvent} from 'rxjs';
 import {ajax} from 'rxjs/ajax';
 import {catchError, combineAll, concatAll, delay, endWith, finalize, map, mapTo, merge as mergeOp, mergeAll, mergeMap, pairwise, startWith, take, withLatestFrom} from 'rxjs/operators';
 import {XMLHttpRequest} from 'xmlhttprequest';
-import {EventEmitter} from 'events';
 
 /**
  * combineAll
@@ -298,4 +298,3 @@ const zipExample = async () => {
     await new Promise(resolve => setTimeout(resolve, 500));
     emitter.emit('barbaz', {});
 };
-zipExample();
