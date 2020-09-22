@@ -81,7 +81,7 @@ const retryWhenExample = async () => {
         ({
             maxRetryAttempts,
             scalingDuration,
-        }: {maxRetryAttempts, scalingDuration: number}) =>
+        }: {maxRetryAttempts: number, scalingDuration: number}) =>
             (attempts: Observable<any>) => attempts.pipe(
                 mergeMap((err: Error, i: number) => {
                     const retryAttempt = i + 1;

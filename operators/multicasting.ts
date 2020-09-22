@@ -85,4 +85,3 @@ const shareWithReplayExample = () => {
     // With share() alone this would not log anything.
     lastUrl$.subscribe(x => console.log('shareWithReplay sub 2:', x));
 };
-shareWithReplayExample();

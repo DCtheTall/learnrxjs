@@ -120,20 +120,20 @@ const forkJoinExample = () => {
 
     varyingNumberOfReqs$.subscribe(x => console.log('forkJoin # of requests:', x));
 
-    forkJoin(
+    forkJoin([
         of('Hello'),
         of('World'),
         throwError('this will throw'),
-    ).pipe(
+    ]).pipe(
         catchError(err => of(err)),
     ).subscribe(
         x => console.log('forkJoin uncaught:', x));
 
-    forkJoin(
+    forkJoin([
         of('Hello'),
         of('World'),
         throwError('this will be caught').pipe(catchError(err => of(err))),
-    ).subscribe(x => console.log('forkJoin caught:', x));
+    ]).subscribe(x => console.log('forkJoin caught:', x));
 };
 
 /**
