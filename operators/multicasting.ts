@@ -4,7 +4,6 @@ import {multicast, pluck, publish, share, shareReplay, take, tap} from 'rxjs/ope
 /**
  * publish
  */
-
 const publishExample = () => {
     const example$ = interval(250).pipe(
         take(2),
@@ -21,7 +20,6 @@ const publishExample = () => {
 /**
  * multicast
  */
-
 const multicastExample = async () => {
     const multi1$ = interval(250).pipe(
         take(2),
@@ -52,7 +50,6 @@ const multicastExample = async () => {
 /**
  * share
  */
-
 const shareExample = () => {
     const source$ = timer(1000).pipe(
         tap(() => console.log('share: side effect')));
@@ -69,7 +66,6 @@ const shareExample = () => {
 /**
  * shareWithReplay
  */
-
 const shareWithReplayExample = () => {
     const routeEnd = new Subject<{data: object, url: string}>();
 

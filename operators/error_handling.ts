@@ -5,7 +5,6 @@ import {catchError, delayWhen, finalize, map, mergeMap, retry, retryWhen, switch
 /**
  * catchError
  */
-
 const catchErrorExample = () => {
     throwError(
         new Error('this is an error'),
@@ -46,7 +45,6 @@ const catchErrorExample = () => {
 /**
  * retry
  */
-
 const retryExample = async () => {
     interval(250).pipe(
         mergeMap(x => (x > 5 ? throwError(new Error('too high')) : of(x))),
@@ -60,7 +58,6 @@ const retryExample = async () => {
 /**
  * retryWhen
  */
-
 const retryWhenExample = async () => {
     interval(250).pipe(
         map(x => {

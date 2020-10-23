@@ -7,7 +7,6 @@ import {XMLHttpRequest} from 'xmlhttprequest';
 /**
  * ajax
  */
-
 const nodeAjax = (url: string) => ajax({
     url,
     createXHR: () => new XMLHttpRequest(),
@@ -41,7 +40,6 @@ const ajaxExample = () => {
 /**
  * create
  */
-
 const createExample = () => {
     const obs$ = Observable.create((obs: Observer<string>) => {
         obs.next('Hello');
@@ -67,7 +65,6 @@ const createExample = () => {
 /**
  * defer
  */
-
 const deferExample = async () => {
     // Date is time that observable is created.
     const s1$ = of(['s1', new Date()]);
@@ -83,7 +80,6 @@ const deferExample = async () => {
 /**
  * empty
  */
-
 const emptyExample = async () => {
     empty().subscribe({
         next: () => console.log('empty: next'),
@@ -115,7 +111,6 @@ const emptyExample = async () => {
 /**
  * from
  */
-
 const fromExample = () => {
     from([1, 2, 3, 4, 5]).subscribe(x => console.log('from array:', x));
 
@@ -134,7 +129,6 @@ const fromExample = () => {
 /**
  * fromEvent
  */
-
 const fromEventExample = () => {
     const emitter = new EventEmitter();
     fromEvent(emitter, 'foobar').subscribe(x => console.log('fromEvent:', x));
@@ -144,7 +138,6 @@ const fromEventExample = () => {
 /**
  * generate
  */
-
 const generateExample = () => {
     generate(2, x => x <= 8, x => x + 3).subscribe(
         x => console.log('generate:', x));
@@ -156,7 +149,6 @@ const generateExample = () => {
 /**
  * interval
  */
-
 const intervalExample = () => {
     interval(1000).pipe(take(5)).subscribe(x => console.log('interval:', x));
 };
@@ -164,7 +156,6 @@ const intervalExample = () => {
 /**
  * of
  */
-
 const ofExample = () => {
     of(1, 2, 3, 4, 5).subscribe(x => console.log('of:', x));
 
@@ -174,7 +165,6 @@ const ofExample = () => {
 /**
  * range
  */
-
 const rangeExample = () => {
     range(1, 10).subscribe(x => console.log('range:', x));
 };
@@ -182,7 +172,6 @@ const rangeExample = () => {
 /**
  * throwError
  */
-
 const throwErrorExample = () => {
     throwError('this will throw').subscribe({
         next: () => console.log('this should not log'),
@@ -194,7 +183,6 @@ const throwErrorExample = () => {
 /**
  * timer
  */
-
 const timerExample = () => {
     timer(1000).pipe(take(3)).subscribe(x => console.log('timer(1000):', x));
 

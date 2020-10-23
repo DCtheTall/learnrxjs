@@ -5,7 +5,6 @@ import {defaultIfEmpty, delay, every, mergeMap, sequenceEqual, switchMap, take, 
 /**
  * defaultIfEmpty
  */
-
 const defaultIfEmptyExample = () => {
     of().pipe(defaultIfEmpty('Observable is empty!')).subscribe(
         x => console.log('defaultIfEmpty:', x));
@@ -17,7 +16,6 @@ const defaultIfEmptyExample = () => {
 /**
  * every
  */
-
 const everyRequest =
     (code: number, msg: string): Observable<{code: number}> =>
         of({code}).pipe(
@@ -45,7 +43,6 @@ const everyExample = () => {
 /**
  * iif
  */
-
 const iifExample = async () => {
     const r$ = of('R');
     const x$ = of('X');
@@ -78,7 +75,6 @@ const iifExample = async () => {
 /**
  * sequenceEqual
  */
-
 const sequenceEqualExample = () => {
     const expected$ = from([4, 5, 6]);
 

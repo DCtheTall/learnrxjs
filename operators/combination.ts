@@ -6,9 +6,7 @@ import {XMLHttpRequest} from 'xmlhttprequest';
 
 /**
  * combineAll
- */
-
-const combineAllExamples = () => {
+ */const combineAllExamples = () => {
     const source$ = interval(1000).pipe(take(2));
 
     const example$ = source$.pipe(
@@ -22,9 +20,7 @@ const combineAllExamples = () => {
 
 /**
  * combineLatest
- */
-
-const combineLastestExample = () => {
+ */const combineLastestExample = () => {
     const timerOne$ = timer(250, 1000).pipe(take(3));
     const timerTwo$ = timer(500, 1000).pipe(take(3));
     const timerThree$ = timer(750, 1000).pipe(take(3));
@@ -42,7 +38,6 @@ const combineLastestExample = () => {
 /**
  * concat
  */
-
 const concatExample = () => {
     concat(of(1, 2, 3), of(4, 5, 6), of(7, 8, 9)).subscribe(
         x => console.log('concat of:', x));
@@ -63,7 +58,6 @@ const concatExample = () => {
 /**
  * concatAll
  */
-
 const concatAllExample = () => {
     const source$ = interval(500);
     source$.pipe(
@@ -74,7 +68,6 @@ const concatAllExample = () => {
 /**
  * endWith
  */
-
 const endWithExample = () => {
     of('Hello', 'Friend').pipe(
         endWith('Goodbye', 'Friend'),
@@ -85,7 +78,6 @@ const endWithExample = () => {
 /**
  * forkJoin
  */
-
 const getJSON = (url: string) => ajax({
     url,
     createXHR: () => new XMLHttpRequest(),
@@ -126,8 +118,7 @@ const forkJoinExample = () => {
         throwError('this will throw'),
     ]).pipe(
         catchError(err => of(err)),
-    ).subscribe(
-        x => console.log('forkJoin uncaught:', x));
+    ).subscribe(x => console.log('forkJoin uncaught:', x));
 
     forkJoin([
         of('Hello'),
@@ -139,7 +130,6 @@ const forkJoinExample = () => {
 /**
  * merge
  */
-
 const mergeExample = async () => {
     const first$ = interval(2500).pipe(take(2));
     const second$ = interval(2000).pipe(take(2));
@@ -150,8 +140,8 @@ const mergeExample = async () => {
         first$.pipe(mapTo('FIRST')),
         second$.pipe(mapTo('SECOND')),
         third$.pipe(mapTo('THIRD')),
-        fourth$.pipe(mapTo('FORTH'))).subscribe(
-            x => console.log('merge:', x));
+        fourth$.pipe(mapTo('FORTH')),
+    ).subscribe(x => console.log('merge:', x));
 
     // Wait for first example.
     await new Promise(resolve => setTimeout(resolve, 6000));
@@ -167,11 +157,11 @@ const mergeExample = async () => {
 /**
  * mergeAll
  */
-
 const mergeAllExample = () => {
     of(1, 2, 3).pipe(
         map(x => of(x)),
-        mergeAll()).subscribe(x => console.log('mergeAll:', x));
+        mergeAll(),
+    ).subscribe(x => console.log('mergeAll:', x));
 
     const source$ = interval(500).pipe(take(5));
 
@@ -187,7 +177,6 @@ const mergeAllExample = () => {
 /**
  * pairwise
  */
-
 const pairwiseExample = () => {
     interval(1000).pipe(pairwise(), take(5)).subscribe(
         x => console.log('pairwise:', x));
@@ -196,7 +185,6 @@ const pairwiseExample = () => {
 /**
  * race
  */
-
 const raceExample = async () => {
     race(
         interval(1000).pipe(mapTo('1s won!')),
@@ -221,7 +209,6 @@ const raceExample = async () => {
 /**
  * startWith
  */
-
 const startWithExample = () => {
     of(1, 2, 3).pipe(startWith(0)).subscribe(
         x => console.log('startWith:', x));
@@ -230,7 +217,6 @@ const startWithExample = () => {
 /**
  * withLatestFrom
  */
-
 const withLatestFromExample = async () => {
     const fast$ = interval(1000).pipe(take(10));
     const slow$ = interval(5000).pipe(take(2));
@@ -251,7 +237,6 @@ const withLatestFromExample = async () => {
 /**
  * zip
  */
-
 const zipMouseEvent =
     (target: EventEmitter, name: string): Observable<{x, y: number}> =>
         fromEvent(target, name).pipe(

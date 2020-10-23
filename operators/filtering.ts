@@ -5,7 +5,6 @@ import {auditTime, debounce, debounceTime, distinct, distinctUntilChanged, disti
 /**
  * auditTime
  */
-
 const auditTimeExample = async () => {
     const emitter = new EventEmitter();
     
@@ -26,7 +25,6 @@ const auditTimeExample = async () => {
 /**
  * debounce
  */
-
 const debounceExample = async () => {
     of('This', 'should', 'not', 'log...', 'Hello world!').pipe(
         debounce(() => timer(1000)),
@@ -46,7 +44,6 @@ const debounceExample = async () => {
 /**
  * debounceTime
  */
-
 const debouceTimeExample = () => {
     of('This', 'should', 'not', 'log...', 'Hello world!').pipe(
         debounceTime(1000),
@@ -56,7 +53,6 @@ const debouceTimeExample = () => {
 /**
  * distinct
  */
-
 const distinctExample = () => {
     of(1, 2, 3, 4, 1, 5, 2, 3, 4, 5).pipe(distinct()).subscribe(
         x => console.log('distinct:', x));
@@ -73,7 +69,6 @@ const distinctExample = () => {
 /**
  * distinctUntilChanged
  */
-
 const distinctUntilChangedExample = () => {
     of(1, 1, 2, 2, 3, 1).pipe(distinctUntilChanged()).subscribe(
         x => console.log('distinctUntilChanged:', x));
@@ -95,7 +90,6 @@ const distinctUntilChangedExample = () => {
 /**
  * distinctUntilKeyChanged
  */
-
 const distinctUntilKeyChangedExample = () => {
     of(
         {name: 'Alice'},
@@ -108,7 +102,6 @@ const distinctUntilKeyChangedExample = () => {
 /**
  * filter
  */
-
 const filterExample = () => {
     of(1, 2, 3, 4).pipe(filter(x => x % 2 === 0)).subscribe(
         x => console.log('filter:', x));
@@ -117,7 +110,6 @@ const filterExample = () => {
 /**
  * find
  */
-
 const findExample = () => {
     const emitter = new EventEmitter();
     interface Message {targetId: string, message: string}
@@ -141,7 +133,6 @@ const findExample = () => {
 /**
  * first
  */
-
 const firstExample = () => {
     of(1, 2, 3, 4).pipe(first()).subscribe(x => console.log('first():', x));
 
@@ -155,7 +146,6 @@ const firstExample = () => {
 /**
  * ignoreElements
  */
-
 const ignoreElementsExample = async () => {
     interval(100).pipe(
         take(5),
@@ -187,7 +177,6 @@ const ignoreElementsExample = async () => {
 /**
  * last
  */
-
 const lastExample = () => {
     of(1, 2, 3, 4, 5).pipe(last()).subscribe(x => console.log('last():', x));
 
@@ -201,7 +190,6 @@ const lastExample = () => {
 /**
  * sample
  */
-
 const sampleExample = async () => {
     interval(100).pipe(take(10), sample(interval(200))).subscribe(
         x => console.log('sample:', x));
@@ -217,7 +205,6 @@ const sampleExample = async () => {
 /**
  * single
  */
-
 const singleExample = () => {
     of(1, 2, 3, 4, 5).pipe(single(x => x === 3)).subscribe(
         x => console.log('single:', x));
@@ -230,7 +217,6 @@ const singleExample = () => {
 /**
  * skip
  */
-
 const skipExample = () => {
     interval(100).pipe(take(10), skip(5)).subscribe(
         x => console.log('skip:', x));
@@ -239,7 +225,6 @@ const skipExample = () => {
 /**
  * skipUntil
  */
-
 const skipUntilExample = () => {
     interval(100).pipe(
         take(10),
@@ -250,7 +235,6 @@ const skipUntilExample = () => {
 /**
  * skipWhile
  */
-
 const skipWhileExample = () => {
     of(1, 2, 3, 4, 5).pipe(skipWhile(x => x < 3)).subscribe(
         x => console.log('skipWhile:', x));
@@ -259,7 +243,6 @@ const skipWhileExample = () => {
 /**
  * take
  */
-
 const takeExample = () => {
     of(1, 2, 3, 4, 5).pipe(take(3)).subscribe(
         x => console.log('take:', x));
@@ -268,7 +251,6 @@ const takeExample = () => {
 /**
  * takeLast
  */
-
 const takeLastExample = () => {
     of(1, 2, 3, 4, 5).pipe(takeLast(3)).subscribe(
         x => console.log('takeLast:', x));
@@ -277,7 +259,6 @@ const takeLastExample = () => {
 /**
  * takeUntil
  */
-
 const takeUntilExample = () => {
     interval(100).pipe(takeUntil(timer(550))).subscribe(
         x => console.log('takeUntil:', x));
@@ -286,7 +267,6 @@ const takeUntilExample = () => {
 /**
  * takeWhile
  */
-
 const takeWhileExample = () => {
     of(1, 2, 3, 4, 5).pipe(takeWhile(x => x < 4)).subscribe(
         x => console.log('takeWhile(x => x < 4):', x));
@@ -298,7 +278,6 @@ const takeWhileExample = () => {
 /**
  * throttle
  */
-
 const throttleExample = async () => {
     interval(100).pipe(
         throttle(() => interval(250)),
@@ -320,7 +299,6 @@ const throttleExample = async () => {
 /**
  * throttleTime
  */
-
 const throttleTimeExample = async () => {
     interval(100).pipe(
         throttleTime(250),
