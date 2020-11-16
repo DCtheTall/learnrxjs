@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+    <style>
+      .container {
+        align-items: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .counter {
+        font-size: 40px;
+        margin-bottom: 20px;
+      }
+
+      .control {
+        border: 1px solid #000;
+        margin-bottom: 20px;
+        padding: 20px 5px 5px 5px;
+        position: relative;
+        width: 80%;
+      }
+
+      .control-title {
+        display: flex;
+        justify-content: center;
+        position: absolute;
+        top: -21px;
+        width: 100%;
+      }
+
+      .control-title > span {
+        background: #fff;
+        font-size: 24px;
+        padding: 4px;
+      }
+
+      .control-content {
+        display: flex;
+        justify-content: center;
+      }
+
+      .control-content > * {
+        margin: 0 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="counter" id="counter"> 0 </div>
+
+      <div class="control">
+        <div class="control-title">
+          <span> Setup </span>
+        </div>
+        <div class="control-content">
+          <button id="start"> start </button>
+          <button id="pause"> pause </button>
+          <button id="stop"> stop </button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-title">
+          <span> Count </span>
+        </div>
+        <div class="control-content">
+          <button id="countup"> count up </button>
+          <button id="countdown"> count down </button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-title">
+          <span> Set value </span>
+        </div>
+        <div class="control-content">
+          <input type="number" id="valueinput" value="0">
+          <button id="setvalue"> set </button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-title">
+          <span> Speed </span>
+        </div>
+        <div class="control-content">
+          <input type="number" id="speedinput" value="1000">
+          <button id="setspeed"> set </button>
+        </div>
+      </div>
+
+      <div class="control">
+        <div class="control-title">
+          <span> Increase </span>
+        </div>
+        <div class="control-content">
+          <input type="number" id="increaseinput" value="1">
+          <button id="setincrease"> set </button>
+        </div>
+      </div>
+    </div>
+    <script src="./dist/index.js"></script>
+  </body>
+</html>
