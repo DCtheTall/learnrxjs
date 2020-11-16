@@ -28,7 +28,6 @@ const mapClick = (id: string, fn: () => Partial<State>) =>
     fromClick(id).pipe(map(fn));
 
 const setValue = (state: State) => {
-    console.log(state);
     getElem('counter').textContent = state.count.toString();
 };
 
