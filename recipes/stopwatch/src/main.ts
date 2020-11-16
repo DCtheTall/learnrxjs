@@ -35,7 +35,7 @@ const setValue = (state: State) => {
 const getValue = (id: string) =>
     parseInt((getElem(id) as HTMLInputElement).value, 10);
 
-const obs$ = merge(
+merge(
     mapClickTo('start', {counting: true}),
     mapClickTo('pause', {counting: false}),
     mapClickTo('stop', {count: 0, counting: false}),
@@ -46,7 +46,7 @@ const obs$ = merge(
     mapClick('setincrease', () => ({increase: getValue('increaseinput')})),
 ).pipe(
     scan(
-        (acc: State, curr: Partial<State>): State => ({...acc, ...curr}),
+        (acc: State, cur: Partial<State>): State => ({...acc, ...cur}),
         initialState(),
     ),
     tap((state: State) => setValue(state)),
