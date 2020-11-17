@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
+    <style>
+      * {
+        font-family: Roboto Mono;
+      }
+
+      body {
+        background: #222;
+        margin: 0;
+      }
+
+      .fixed-fullscreen {
+        bottom: 0;
+        left: 0;
+        position: fixed;
+        right: 0;
+        top: 0;
+      }
+
+      .loading {
+        background: #222;
+      }
+
+      .flex {
+        display: flex;
+      }
+
+      .container {
+        align-items: center;
+        display: flex;
+        justify-content: center;
+        padding: 15px;
+        width: 100%;
+      }
+
+      .not-in-progress {
+        align-items: center;
+        flex-direction: column;
+      }
+
+      .title {
+        color: #fff;
+        font-size: 42px;
+        margin: 20px 0;
+      }
+
+      .game-over {
+        color: #d9968f;
+        text-shadow: 0 0 3px rgba(255, 255, 255, .4);
+      }
+
+      .game-over-score {
+        color: #a4ede8;
+        font-size: 24px;
+        margin: 0 0 20px;
+        text-shadow: 0 0 3px rgba(255, 255, 255, .4);
+      }
+
+      button {
+        background: #222;
+        border: 1px solid #a4ede8;
+        border-radius: 3px;
+        color: #a4ede8;
+        font-size: 16px;
+      }
+
+      button:hover {
+        background: #444;
+        border-color: #fff;
+        color: #fff;
+      }
+
+      .in-progress {
+        align-items: center;
+        justify-content: space-around;
+      }
+
+      .board {
+        border: 1px solid #a4ede8;
+        height: 300px;
+        position: relative;
+        width: 150px;
+      }
+
+      .cell {
+        box-sizing: border-box;
+        border: .5px solid #2a2a2a;
+        height: 15px;
+        position: absolute;
+        width: 15px;
+      }
+
+      .cell-i {}
+      .cell-l {}
+      .cell-j {}
+      .cell-o {}
+      .cell-s {}
+      .cell-z {}
+      .cell-t {}
+
+      .sidebar {
+        flex-direction: column;
+        margin-left: 30px;
+      }
+
+      .sidebar-score {
+        color:  #a4ede8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading fixed-fullscreen" id="loading"></div>
+    <div class="container fixed-fullscreen flex">
+      <div id="unstarted" class="not-in-progress flex">
+        <div class="title"> Tetris </div>
+        <button id="start-game"> Start </button>
+      </div>
+
+      <div id="game-over" class="not-in-progress flex">
+        <div class="title game-over"> Game Over! </div>
+        <div class="game-over-score" id="game-over-score"></div>
+        <button id="restart-game"> Play again </button>
+      </div>
+
+      <div id="in-progress" class="in-progress flex">
+        <div class="board" id="board"></div>
+        <div class="sidebar flex">
+          <div class="sidebar-score" id="sidebar-score"></div>
+        </div>
+      </div>
+    </div>
+    <script src="./dist/index.js"></script>
+  </body>
+</html>
