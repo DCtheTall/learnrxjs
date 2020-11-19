@@ -32,8 +32,8 @@
       .container {
         align-items: center;
         display: flex;
+        height: 100%;
         justify-content: center;
-        padding: 15px;
         width: 100%;
       }
 
@@ -46,6 +46,13 @@
         color: #fff;
         font-size: 42px;
         margin: 20px 0;
+      }
+
+      .subtitle {
+        color: #a4ede8;
+        font-size: 12px;
+        margin-bottom: 20px;
+        text-align: center;
       }
 
       .game-over {
@@ -122,6 +129,11 @@
         background: #aa00cc;
       }
 
+      .animated-cell {
+        background: #fff  !important;
+        border: none  !important;
+      }
+
       .sidebar {
         flex-direction: column;
         margin-left: 30px;
@@ -140,6 +152,16 @@
       .queue-item {
         margin: 15px 0 0 0;
         position: relative;
+        width: 60px;
+        height: 60px;
+      }
+
+      .projection {
+        opacity: 0.25;
+      }
+
+      .hidden {
+        display: none;
       }
     </style>
   </head>
@@ -148,6 +170,13 @@
     <div class="container fixed-fullscreen flex">
       <div id="unstarted" class="not-in-progress flex">
         <div class="title"> Tetris </div>
+        <div class="subtitle">
+          Use left and right arrow keys to move the bricks.
+          <br>
+          Use the up arrow key to rotate bricks.
+          <br>
+          Use the down arrow key to drop the brick.
+        </div>
         <button id="start-game"> Start </button>
       </div>
 
@@ -159,7 +188,8 @@
 
       <div id="in-progress" class="in-progress flex">
         <div class="board" id="board">
-          <div class="falling-brick" id="falling-brick"></div>
+          <div id="falling-brick"></div>
+          <div class="projection" id="projection"></div>
         </div>
         <div class="sidebar flex">
           <div class="sidebar-score" id="sidebar-score"></div>

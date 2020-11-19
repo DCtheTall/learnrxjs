@@ -5,8 +5,8 @@ interface State {
     count: number;
     counting: boolean;
     countup: boolean;
-    speed: number,
-    increase: number,
+    speed: number;
+    increase: number;
 }
 
 const initialState = (): State => ({

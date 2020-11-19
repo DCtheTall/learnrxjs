@@ -1,13 +1,17 @@
-import {Observable, fromEvent, merge, timer} from 'rxjs';
+import {Observable, fromEvent, merge, timer, empty, queue} from 'rxjs';
 import {map, mapTo, scan, tap} from 'rxjs/operators';
 
-const FPS = 10;
+const FPS = 7.5;
 const GRID_WIDTH = 10;
 const GRID_HEIGHT = 20;
 const N_BRICK_TYPES = 7;
 const UNSPAWNED_POS = -Infinity;
 const CELL_SIZE_PX = 15;
 const QUEUE_SIZE = 4;
+const BOARD_HTML_CHILDREN = 2;
+const ROW_ANIMATION_FRAMES = 6;
+const ROW_ANIMATION_INTERVAL = 2;
+const POINTS_PER_ROW = 100;
 
 const LOADING_ID = 'loading';
 const START_GAME_ID = 'start-game';
@@ -19,21 +23,14 @@ const GAME_OVER_SCORE_ID = 'game-over-score';
 const SIDEBAR_SCORE_ID = 'sidebar-score';
 const BOARD_ID = 'board';
 const FALLING_BRICK_ID = 'falling-brick';
+const PROJECTION_ID = 'projection';
 
 const CELL_CLASS = 'cell';
+const ROW_ANIMATION_CELL_CLASS = 'animated-cell';
+const HIDDEN_ELEM_CLASS = 'hidden';
 
 /**
- * Different "modes" the game can be in.
- * Each phase has a different view.
- */
-enum GamePhase {
-    UNSTARTED = 0,
-    IN_PROGRESS = 1,
-    OVER = 2,
-}
-
-/**
- * Types of 4x4 bricks in Tetris.
+ * 7 canonical brick types of Tetris.
  */
 enum BrickType {
     I = 0,
@@ -45,9 +42,12 @@ enum BrickType {
     T = 6,
 }
 
+const randomBrickType = (): BrickType =>
+    Math.floor(Math.random() * N_BRICK_TYPES);
+
 type Bit = 0 | 1;
 
-type BitGrid = Bit[][];
+type BrickShape = Bit[][];
 
 /**
  * Map brick types to their shape.
@@ -55,7 +55,7 @@ type BitGrid = Bit[][];
  * When a brick lands it is written to a more
  * static data structure.
  */
-const brickTypeToShapeMap: {[key in BrickType]?: BitGrid} = {
+const brickTypeToShapeMap: {[key in BrickType]?: BrickShape} = {
     [BrickType.I]: [
         [0, 0, 0, 0],
         [1, 1, 1, 1],
@@ -93,12 +93,78 @@ const brickTypeToShapeMap: {[key in BrickType]?: BitGrid} = {
     ],
 };
 
-const bitGridDims = (b: BitGrid) => ({width: b[0].length, height: b.length});
+const shapeSize = (b: BrickShape) => b.length;
 
-const removeBottomRow = (b: BitGrid) => b.slice(0, b.length - 1);
+const isEmptyBitGridRow = (b: BrickShape, y: number) => b[y].every(x => !x);
 
-const randomBrickType = (): BrickType =>
-    Math.floor(Math.random() * N_BRICK_TYPES);
+const copyBrickShape = (b: BrickShape) => {
+    const size = shapeSize(b);
+    return [...Array(size)].map(
+        (_, y) => [...Array(size)].map((_, x) => b[y][x]));
+};
+
+enum Orientation {
+    SPAWN = 0,
+    RIGHT = 1,
+    TWO = 2,
+    LEFT = 3,
+}
+
+const incrementOrientation = (o: Orientation) => ((o + 1) % 4) as Orientation;
+
+type NumPair = [number, number];
+
+type WallKickList = [NumPair, NumPair, NumPair, NumPair, NumPair];
+
+/**
+ * Based on https://tetris.wiki/Super_Rotation_System
+ */
+
+type OrientationToWallkickMap = {[key in Orientation]?: WallKickList};
+
+const jlstzOrientationToWallKickMap: OrientationToWallkickMap = {
+    // 0 -> R
+    [Orientation.SPAWN]: [[0, 0], [-1, 0], [-1, 1], [0, -2], [-1, -2]],
+    // R -> 2
+    [Orientation.RIGHT]: [[0, 0], [1, 0], [1, -1], [0, 2], [1, 2]],
+    // 2 -> L
+    [Orientation.TWO]: [[0, 0], [1, 0], [1, 1], [0, -2], [1, -2]],
+    // L -> 0
+    [Orientation.LEFT]: [[0, 0], [-1, 0], [-1, -1], [0, 2], [-1, 2]],
+};
+
+const iOrientationToWallKickMap: OrientationToWallkickMap = {
+    // 0 -> R
+    [Orientation.SPAWN]: [[0, 0], [-2, 0], [1, 0], [-2, -1], [1, 2]],
+    // R -> 2
+    [Orientation.RIGHT]: [[0, 0], [-1, 0], [2, 0], [-1, 2], [2, -1]],
+    // 2 -> L
+    [Orientation.TWO]: [[0, 0], [2, 0], [-1, 0], [2, 1], [-1, -2]],
+    // L -> 0
+    [Orientation.LEFT]: [[0, 0], [1, 0], [-2, 0], [1, -2], [-2, 1]],
+};
+
+/**
+ * Brute force rotation algorithm for bounding boxes.
+ * Since they are only 4x4 at most, this method suffices.
+ */
+const rotateShape = (prev: BrickShape, orientation: Orientation) => {
+    const size = shapeSize(prev);
+    let cur: BrickShape = copyBrickShape(prev);
+    for (let i = 0; i < orientation; i++) {
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                cur[x][size - 1 - y] = prev[y][x];
+            }
+        }
+        prev = copyBrickShape(cur);
+    }
+    return cur;
+}
+
+/**
+ * Code for the grid of static bricks.
+ */
 
 type EmptyCell = -1;
 
@@ -108,18 +174,53 @@ const emptyCell: Cell = -1;
 
 type Grid = Cell[][];
 
+const isEmptyCell = (grid: Grid, x: number, y: number) =>
+    grid[y] === undefined || grid[y][x] === emptyCell;
+
+const collision = (grid: Grid, shape: BrickShape, x0: number, y0: number) => {
+    const size = shapeSize(shape);
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            if (shape[y][x] && !isEmptyCell(grid, x0 + x, y0 + y)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+
 /**
  * Create a new empty row.
  */
-const initEmptyRow = (width: number) => [...Array(width)].map(() => emptyCell);
+const emptyRow = (width: number) => [...Array(width)].map(() => emptyCell);
 
 /**
  * Create the game grid. It will store all bricks except the currently
  * dropping one. It's a multi-dimensional array where each subarray is
  * a row. This representation makes clearing rows easier.
  */
-const initEmptyCells = (width: number, height: number) =>
-    [...Array(height)].map(() => initEmptyRow(width));
+const emptyCells = (width: number, height: number) =>
+    [...Array(height)].map(() => emptyRow(width));
+
+const isCompleteRow = (row: BrickType[]) => row.every(x => x !== emptyCell);
+
+const hasCompletedRow =
+    (grid: Grid) => grid.some(isCompleteRow);
+
+const removeCompletedRowsFromGrid = (grid: Grid): Grid => {
+    const remaining = [];
+    for (const row of grid) {
+        if (!isCompleteRow(row)) remaining.push(row);
+    }
+    const newGrid: Grid = [];
+    for (let i = 0; i < GRID_HEIGHT - remaining.length; i++) {
+        newGrid.push(emptyRow(GRID_WIDTH));
+    }
+    for (const row of remaining) {
+        newGrid.push(row);
+    }
+    return newGrid;
+};
 
 /**
  * Currently falling brick code.
@@ -130,68 +231,146 @@ const initEmptyCells = (width: number, height: number) =>
  * I chose this pattern over completely immutable state for brevity.
  */
 class FallingBrick {
-    type: BrickType;
-    x: number;
-    y: number;
-    theta: number; // rotation.
+    x: number = UNSPAWNED_POS;
+    y: number = UNSPAWNED_POS;
+    orientation: Orientation = Orientation.SPAWN;
 
-    constructor() {
-        this.type = randomBrickType();
-        this.x = UNSPAWNED_POS;
-        this.y = UNSPAWNED_POS;
-        this.theta = 0;
-    }
+    constructor(public readonly type: BrickType) {}
 
     isUnspawned(): boolean {
         return this.x === UNSPAWNED_POS;
     }
 
-    spawn() {
-        this.x = 3;
-        this.y = 3;
-    }
-
-    rotate() {
-        // TODO collision detection, reposition, and wall kicking
-        this.theta = (this.theta + 90) % 360;
-    }
-
-    moveLeft() {
-        // TODO collision
-        this.x--;
-    }
-
-    moveRight() {
-        // TODO collision
-        this.x++;
-    }
-
-    bitGrid(): BitGrid {
+    /**
+     * Gets brick shape after applying the rotation.
+     */
+    shape(): BrickShape {
         const shape = brickTypeToShapeMap[this.type];
-        // TODO apply rotation.
-        return shape;
+        if (this.isUnspawned() || this.type === BrickType.O) return shape;
+        return rotateShape(shape, this.orientation);
+    }
+
+    spawn() {
+        const shape = this.shape();
+        const size = shapeSize(shape);
+        this.x = Math.floor((GRID_WIDTH - size) / 2);
+        this.y = -size;
     }
 
     private isTouchingFloor() {
-        const shape = this.bitGrid();
-        const {height} = bitGridDims(shape);
-        for (let y = height; y > 0; y--) {
-            if (shape[y-1].every(x => !x)) continue; // Skip empty rows.
-            if (this.y + y === GRID_HEIGHT) return true;
+        const shape = this.shape();
+        const size = shapeSize(shape);
+        for (let y = size - 1; y >= 0; y--) {
+            if (isEmptyBitGridRow(shape, y)) continue; // Skip empty rows.
+            if (this.y + y + 1 === GRID_HEIGHT) return true;
         }
         return false;
     }
 
+    private isOnTopOfBricks(grid: Grid) {
+        return collision(grid, this.shape(), this.x, this.y + 1);
+    }
+
+    private canFall(grid: Grid) {
+        return !this.isTouchingFloor() && !this.isOnTopOfBricks(grid);
+    }
+
     /**
-     * Boolean indicates whether the block can should stop falling.
+     * Returns true if the brick can no longer fall.
      */
-    tickGravity() {
-        if (this.isTouchingFloor()) return true;
+    tickGravity(grid: Grid) {
+        if (!this.canFall(grid)) return true;
         this.y++;
         return false;
     }
 
-    fastFall() {}
+    gameOver(grid: Grid) {
+        return this.isOnTopOfBricks(grid) && this.y < 0;
+    }
+
+    rotate(grid: Grid) {
+        if (this.isUnspawned()) return;
+        if (this.type === BrickType.O) return;
+
+        let nextOrientation = incrementOrientation(this.orientation);
+        let nextShape = rotateShape(this.shape(), nextOrientation);
+
+        const orientationToWallkickMap =
+            this.type === BrickType.I ?
+                iOrientationToWallKickMap : jlstzOrientationToWallKickMap;
+        for (const pair of orientationToWallkickMap[this.orientation]) {
+            const [dx, dy] = pair;
+            if (!collision(grid, nextShape, this.x + dx, this.y + dy)) {
+                this.orientation = nextOrientation;
+                this.x += dx;
+                this.y += dy;
+                return;
+            }
+        }
+    }
+
+    private isAgainstWall(left: boolean) {
+        const shape = this.shape();
+        const size = shapeSize(shape);
+        const bound = left ? 0 : GRID_WIDTH - 1;
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                if (shape[y][x] && this.x + x === bound) return true;
+            }
+        }
+        return false;
+    }
+
+    private canMove(grid: Grid, left: boolean) {
+        const shape = this.shape();
+        return (!collision(grid, shape, this.x + (left ? -1 : 1), this.y)
+                && !this.isAgainstWall(left));
+    }
+
+    private canMoveLeft(grid: Grid) {
+        return this.canMove(grid, true);
+    }
+
+    private canMoveRight(grid: Grid) {
+        return this.canMove(grid, false);
+    }
+
+    moveLeft(grid: Grid) {
+        if (this.isUnspawned() || !this.canMoveLeft(grid)) return;
+        this.x--;
+    }
+
+    moveRight(grid: Grid) {
+        if (this.isUnspawned() || !this.canMoveRight(grid)) return;
+        this.x++;
+    }
+
+    fastFall(grid: Grid) {
+        if (this.isUnspawned()) return;
+        while (this.canFall(grid)) this.y++;
+    }
+
+    copy() {
+        const copy = new FallingBrick(this.type);
+        copy.x = this.x;
+        copy.y = this.y;
+        copy.orientation = this.orientation;
+        return copy;
+    }
+}
+
+/**
+ * Code for game state.
+ */
+
+/**
+ * Different "modes" the game can be in.
+ * Each phase has a different view.
+ */
+enum GamePhase {
+    UNSTARTED = 0,
+    IN_PROGRESS = 1,
+    OVER = 2,
 }
 
 type Queue = BrickType[];
@@ -205,6 +384,7 @@ interface State {
     score: number;
     fallingBrick: FallingBrick;
     queue: Queue;
+    completedRowAnimationFrame: number | null;
 }
 
 /**
@@ -213,18 +393,19 @@ interface State {
  */
 const initialState = (): State => ({
     phase: GamePhase.UNSTARTED,
-    bricks: initEmptyCells(GRID_WIDTH, GRID_HEIGHT),
+    bricks: emptyCells(GRID_WIDTH, GRID_HEIGHT),
     score: 0,
-    fallingBrick: new FallingBrick(),
+    fallingBrick: new FallingBrick(randomBrickType()),
     queue: [...Array(QUEUE_SIZE)].map(() => randomBrickType()),
+    completedRowAnimationFrame: null,
 });
 
-const serializeBrickToGrid = (state: State) => {
-    const shape = state.fallingBrick.bitGrid();
-    const {width, height} = bitGridDims(shape);
-    for (let y = 0; y < height; y++) {
+const writeFallingBrickToGrid = (state: State) => {
+    const shape = state.fallingBrick.shape();
+    const size = shapeSize(shape);
+    for (let y = 0; y < size; y++) {
         if (shape[y].every(x => !x)) continue;
-        for (let x = 0; x < width; x++) {
+        for (let x = 0; x < size; x++) {
             if (!shape[y][x]) continue;
             state.bricks[state.fallingBrick.y + y][state.fallingBrick.x + x] =
                 state.fallingBrick.type;
@@ -232,16 +413,58 @@ const serializeBrickToGrid = (state: State) => {
     }
 }
 
+const gameOver = (state: State): State => ({...state, phase: GamePhase.OVER});
+
+const dequeueNextBrick = (state: State): State => ({
+    ...state,
+    queue: [...state.queue.slice(1, QUEUE_SIZE), randomBrickType()],
+    fallingBrick: new FallingBrick(state.queue[0]),
+});
+
+const isRowAnimating =
+    (state: State) => state.completedRowAnimationFrame !== null;
+
+const nextFrame = (x: number) => x === ROW_ANIMATION_FRAMES ? null : x + 1;
+
+const tickCompletedRowAnimation = (state: State) => ({
+    ...state,
+    completedRowAnimationFrame:
+        isRowAnimating(state) ?
+            nextFrame(state.completedRowAnimationFrame) : 0,
+});
+
+const removeCompletedRows = (state: State) => ({
+    ...state,
+    bricks: removeCompletedRowsFromGrid(state.bricks),
+});
+
+const awardPoints = (state: State) => {
+    let points = 0;
+    for (const row of state.bricks) {
+        if (isCompleteRow(row)) points += POINTS_PER_ROW;
+    }
+    return {...state, score: state.score + points};
+};
+
 /**
  * Update state after a clock tick.
  */
 const tickClock = (state: State): State => {
     if (state.phase !== GamePhase.IN_PROGRESS) return state;
+    if (isRowAnimating(state)) {
+        state = tickCompletedRowAnimation(state);
+        if (isRowAnimating(state)) return state;
+        return removeCompletedRows(state);
+    }
     if (state.fallingBrick.isUnspawned()) state.fallingBrick.spawn();
-    if (state.fallingBrick.tickGravity()) {
-        serializeBrickToGrid(state);
-        // TODO row detection
-        state.fallingBrick = new FallingBrick();
+    if (state.fallingBrick.tickGravity(state.bricks)) {
+        if (state.fallingBrick.gameOver(state.bricks)) {
+            return gameOver(state);
+        }
+        writeFallingBrickToGrid(state);
+        state = dequeueNextBrick(state);
+        if (!hasCompletedRow(state.bricks)) return state;
+        return awardPoints(tickCompletedRowAnimation(state));
     }
     return state;
 };
@@ -373,7 +596,7 @@ const setPos = (el: HTMLElement, x: number, y: number) => {
 
 const createGridIfDoesntExist = () => {
     const board = getElem(BOARD_ID);
-    if (board.children.length > 1) return;
+    if (board.children.length > BOARD_HTML_CHILDREN) return;
     for (let x = 0; x < GRID_WIDTH; x++) {
         for (let y = 0; y < GRID_HEIGHT; y++) {
             const el = document.createElement('div');
@@ -385,43 +608,54 @@ const createGridIfDoesntExist = () => {
     }
 };
 
-const renderStationaryBricks = (cells: Grid) => {
+const completedRowAnimationClass = (state: State, y: number) => {
+    if (!isRowAnimating(state)|| !isCompleteRow(state.bricks[y])) return '';
+    const x = Math.floor(
+        state.completedRowAnimationFrame / ROW_ANIMATION_INTERVAL);
+    if (x % 2 == 0) {
+        return ROW_ANIMATION_CELL_CLASS;
+    }
+}
+
+const renderStationaryBricks = (state: State) => {
     createGridIfDoesntExist();
     for (let x = 0; x < GRID_WIDTH; x++) {
         for (let y = 0; y < GRID_HEIGHT; y++) {
             setClasslist(
                 getElem(cellId(x, y)), CELL_CLASS,
-                brickTypeToClassMap[cells[y][x]] || '');
+                brickTypeToClassMap[state.bricks[y][x]] || '',
+                completedRowAnimationClass(state, y));
         }
     }
 };
 
-const setDims = (el: HTMLElement, width: number, height: number) => {
-    if (el.style.width !== px(width)) el.style.width = px(width);
-    if (el.style.height !== px(height)) el.style.height = px(height);
-};
+const hiddenElemClass = (y: number) => (y < 0 ? HIDDEN_ELEM_CLASS : '');
 
-const renderBrickFromGrid = (container: HTMLElement, shape: BitGrid, type: BrickType, x0: number, y0: number) => {
-    const {width, height} = bitGridDims(shape);
-    setDims(container, width, height);
-    for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
-            if (!shape[y][x]) continue;
-            const el = document.createElement('div');
-            setClasslist(el, CELL_CLASS, brickTypeToClassMap[type]);
-            setPos(el, x0 + x, y0 + y);
-            container.appendChild(el);
+const renderBrickFromShape =
+    (container: HTMLElement, shape: BrickShape, type: BrickType, x0: number,
+     y0: number) => {
+        const size = shapeSize(shape);
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                if (!shape[y][x]) continue;
+                const el = document.createElement('div');
+                setClasslist(
+                    el, CELL_CLASS, brickTypeToClassMap[type],
+                    hiddenElemClass(y0 + y));
+                setPos(el, x0 + x, y0 + y);
+                container.appendChild(el);
+            }
         }
-    }
-};
+    };
+
+const removeChildren = (el: HTMLElement) => {
+    while (el.lastChild) el.removeChild(el.lastChild);
+    return el;
+}
 
 const renderQueueBrick = (container: HTMLElement, type: BrickType) => {
-    let shape = brickTypeToShapeMap[type];
-    // All but O bricks have an empty bottom row.
-    if (type !== BrickType.O) shape = removeBottomRow(shape);
-    // I bricks have 2 empty bottom rows.
-    if (type === BrickType.I) shape = removeBottomRow(shape);
-    renderBrickFromGrid(container, shape, type, 0, 0);
+    renderBrickFromShape(
+        removeChildren(container), brickTypeToShapeMap[type], type, 0, 0);
 };
 
 const renderQueue = (queue: Queue) => {
@@ -431,20 +665,26 @@ const renderQueue = (queue: Queue) => {
 };
 
 const renderFallingBrick = (fb: FallingBrick) => {
+    const container = removeChildren(getElem(FALLING_BRICK_ID));
     if (fb.isUnspawned()) return;
+    renderBrickFromShape(container, fb.shape(), fb.type, fb.x, fb.y);
+};
 
-    const container = getElem(FALLING_BRICK_ID);
-    while (container.lastChild) container.removeChild(container.lastChild);
-
-    const shape = brickTypeToShapeMap[fb.type];
-    renderBrickFromGrid(container, shape, fb.type, fb.x, fb.y);
+const renderProjection = (fb: FallingBrick, grid: Grid) => {
+    const proj = fb.copy();
+    proj.fastFall(grid);
+    if (proj.y === fb.y) return;
+    renderBrickFromShape(
+        removeChildren(getElem(PROJECTION_ID)),
+        proj.shape(), proj.type, proj.x, proj.y);
 };
 
 const renderGameFromState = (state: State) => {
     setInnerText(SIDEBAR_SCORE_ID, scoreString(state));
-    renderStationaryBricks(state.bricks);
+    renderStationaryBricks(state);
     renderQueue(state.queue);
     renderFallingBrick(state.fallingBrick);
+    renderProjection(state.fallingBrick, state.bricks);
 };
 
 const render = (state: State) => {
@@ -478,16 +718,16 @@ const handleActions = (state: State, action: Action): State => {
         case Action.START_GAME:
             return {...initialState(), phase: GamePhase.IN_PROGRESS};
         case Action.LEFT:
-            state.fallingBrick.moveLeft();
+            state.fallingBrick.moveLeft(state.bricks);
             return state;
         case Action.RIGHT:
-            state.fallingBrick.moveRight();
+            state.fallingBrick.moveRight(state.bricks);
             return state;
         case Action.UP:
-            state.fallingBrick.rotate();
+            state.fallingBrick.rotate(state.bricks);
             return state;
         case Action.DOWN:
-            state.fallingBrick.fastFall();
+            state.fallingBrick.fastFall(state.bricks);
         default:
             return state;
     }
