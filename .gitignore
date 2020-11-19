@@ -3,3 +3,5 @@
 !webpack.config.js
 node_modules/
 dist/
+recipes/tetris/.git
+recipes/tetris/.gitignore
